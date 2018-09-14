@@ -46,9 +46,11 @@ CorrelationBayesianForm::CorrelationBayesianForm(QWidget *parent) :
     ui->ciValueContainer->hide();
     //ui->credibleInterval->hide();
 #else
-	ui->spearman->setStyleSheet("background-color: pink ;");
+    ui->spearman->hide();
+    ui->ciValueContainer->hide();
+    //ui->spearman->setStyleSheet("background-color: pink ;"); uncomment
     //ui->kendallsTauB->setStyleSheet("background-color: pink ;");
-    ui->ciValueContainer->setStyleSheet("background-color: pink ;");
+    //ui->ciValueContainer->setStyleSheet("background-color: pink ;"); uncomment
     //ui->credibleInterval->setStyleSheet("background-color: pink ;");
 #endif
 

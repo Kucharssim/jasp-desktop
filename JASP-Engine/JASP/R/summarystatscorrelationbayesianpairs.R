@@ -27,7 +27,7 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 	if (!is.null(state)) {
 		diff <- .diff(options, state$options)
 	}
-
+  
 	# Bayes factor type (BF10, BF01, log(BF10))
 	bf.type <- .getBayesfactorTitle.summarystats.ttest(
 								bayesFactorType = options$bayesFactorType,
@@ -41,6 +41,11 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 
 	# add footnotes to the analysis result
 	footnotes <- .newFootnotes()
+	if (options$pearsonCondVars != 0 && options$correlationCoefficient == "pearsonRho"){
+	  .addFootnote(footnotes, symbol = "<em>Note.</em>",
+	               text = paste("The Pearson's partial correlation is based on",
+	                             options$pearsonCondVars, "conditioning variable(s)."))
+	}
 	if (options$hypothesis != "correlated") {
 		.addFootnote(footnotes, symbol = "<em>Note.</em>", text = hypothesis.variables$message)
 	}
@@ -123,7 +128,9 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 	table <- list()
 	
 	if (options$correlationCoefficient == "pearsonRho") {
-	    table[["title"]] <- "Bayesian Pearson Correlation"
+	    table[["title"]] <- ifelse(options$pearsonCondVars == 0,
+	                               "Bayesian Pearson Correlation",
+	                               "Bayesian Pearson Partial Correlation")
 	} else if (options$correlationCoefficient == "kendallTau") {
 	    table[["title"]] <- "Bayesian Kendall Correlation"
 	}
@@ -140,7 +147,11 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 
 	results <- list()
 	results[[".meta"]] <- meta
-	results[["title"]] <- "Bayesian Correlation Pairs"
+	if(options$pearsonCondVars != 0 && options$correlationCoefficient == "pearsonRho"){
+	  results[['title']] <- "Bayesian Partial Correlation Pairs"
+	} else{
+	  results[["title"]] <- "Bayesian Correlation Pairs"
+	}
 	results[["table"]] <- table
 	if (options$plotPriorAndPosterior || options$plotBayesFactorRobustness) {
 		results[["inferentialPlots"]] <- list(
@@ -202,7 +213,8 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 	if (!is.null(state) && !is.null(diff) && ((is.logical(diff) && diff == FALSE) ||
 		(is.list(diff) && (diff$bayesFactorType == FALSE && diff$sampleSize == FALSE &&
 		diff$correlationCoefficient == FALSE && diff$pearsonRhoValue == FALSE &&
-		diff$kendallTauValue == FALSE && diff$priorWidth == FALSE && diff$hypothesis == FALSE )) &&
+		diff$kendallTauValue == FALSE && diff$priorWidth == FALSE && 
+		diff$hypothesis == FALSE && diff$pearsonCondVars == FALSE)) &&
 		plotType %in% state$plotTypes)) {
 
 		index <- which(state$plotTypes == plotType)
@@ -245,14 +257,14 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 			                 correlatedNegatively =bfObject$bfMin0
 			)
 
-
-			.plotFunc <- function() {
+      .plotFunc <- function() {
 				if (!BFH1H0) {
 					someBf <- 1 / someBf
 				}
 
 				.plotPosterior.correlation(
-							r = cor.value, n = options$sampleSize, oneSided = oneSided,
+							r = cor.value, n = options$sampleSize, k = options$pearsonCondVars,
+							oneSided = oneSided,
 							corCoefficient = cor.coefficient, dontPlotData = dontPlotData,
 							kappa = options$priorWidth, BFH1H0 = BFH1H0, BF = someBf,
 							addInformation = options$plotPriorAndPosteriorAdditionalInfo
@@ -328,7 +340,8 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 	if (!is.null(state) && !is.null(diff) && ((is.logical(diff) && diff == FALSE) ||
 		(is.list(diff) && (diff$sampleSize == FALSE && BFtypeRequiresNewPlot == FALSE &&
 		diff$correlationCoefficient == FALSE && diff$pearsonRhoValue == FALSE &&
-		diff$kendallTauValue == FALSE && diff$priorWidth == FALSE && diff$hypothesis == FALSE))) &&
+		diff$kendallTauValue == FALSE && diff$priorWidth == FALSE &&
+		diff$hypothesis == FALSE && diff$pearsonCondVars == FALSE))) &&
 		plotType %in% state$plotTypes) {
 
 		index <- which(state$plotTypes == plotType)
@@ -383,10 +396,11 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 			# 	addInformation = options$plotBayesFactorRobustnessAdditionalInfo
 			# )
 			# plot[["data"]] <- .endSaveImage(image)
-
+      n <- options$sampleSize
+      n <- ifelse(options$correlationCoefficient == "pearsonRho", n - options$pearsonCondVars, n)
 			.plotFunc <- function() {
 				.plotBF.robustnessCheck.summarystats.correlation(
-					r = cor.value, n = options$sampleSize, oneSided = oneSided, BFH1H0 = BFH1H0,
+					r = cor.value, n = n, oneSided = oneSided, BFH1H0 = BFH1H0,
 					corCoefficient = cor.coefficient, kappa = options$priorWidth,
 					dontPlotData = dontPlotData, BF10post = BF10post,
 					addInformation = options$plotBayesFactorRobustnessAdditionalInfo
@@ -473,11 +487,13 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 	#         pValues: three p-values
 
 	some.n <- options$sampleSize
+
 	bfObject <- list(bf10 = NA, bfPlus0 = NA, bfMin0 = NA)
 
 	if (options$correlationCoefficient == "pearsonRho") {
-	    some.r <- options$pearsonRhoValue
-	    bfObject <- .bfPearsonCorrelation(n=some.n, r=some.r, kappa=options$priorWidth)
+	  some.n <- some.n - options$pearsonCondVars # for partial correlation
+	  some.r <- options$pearsonRhoValue
+    bfObject <- .bfPearsonCorrelation(n=some.n, r=some.r, kappa=options$priorWidth)
 		allPValues <- .pValueFromCor(corrie=some.r, n=some.n, method="pearson")
 	} else if (options$correlationCoefficient == "kendallTau") {
 		some.r <- options$kendallTauValue
@@ -516,7 +532,8 @@ SummaryStatsCorrelationBayesianPairs <- function(dataset = NULL, options,
 			(is.list(diff) && (diff$bayesFactorType == FALSE && diff$sampleSize == FALSE &&
 			diff$correlationCoefficient == FALSE && diff$priorWidth == FALSE &&
 			diff$hypothesis == FALSE && diff$pearsonRhoValue == FALSE &&
-			diff$kendallTauValue == FALSE))) && !is.null(state$bfObject)) {
+			diff$kendallTauValue == FALSE && diff$pearsonCondVars == FALSE))) &&
+			!is.null(state$bfObject)) {
 
 		rowsCorrelationBayesianPairs <- state$rowsCorrelationBayesianPairs
 		bfObject <- state$bfObject

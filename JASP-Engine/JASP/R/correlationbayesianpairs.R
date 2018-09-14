@@ -19,12 +19,15 @@
 CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callback=function(...) 0, ...) {
     # Note: This is the default failed bfObject for wrong data
     #
-    failedBfObject <- list(n=NaN, r=NaN, stat=NA, bf10=NA, bfPlus0=NA, bfPlus0=NA, bfMin0=NA, ciValue=options$ciValue, ci=list())
-
-    useKendall <- options$corcoefficient == "Kendall"
-    usePearson <- options$corcoefficient == "Pearson"
+  failedBfObject <- list(n=NaN, r=NaN, stat=NA, bf10=NA, bfPlus0=NA, bfPlus0=NA, bfMin0=NA, ciValue=options$ciValue, ci=list())
+  
+  useKendall <- options$corcoefficient == "Kendall"
+  usePearson <- options$corcoefficient == "Pearson"
 	allVariables <- unique(unlist(options$pairs))
 	allVariables <- allVariables[allVariables != ""]
+	condVars <- unlist(options$condVars)
+	nCondVars <- length(condVars)
+	allVariables <- c(allVariables, condVars)
 
 	if (is.null(dataset)) {
 		if (perform == "run") {
@@ -81,7 +84,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 	#
 	correlation <- list()
 	if (usePearson) {
-	    correlation[["title"]] <- "Bayesian Pearson Correlation"
+	    correlation[["title"]] <- ifelse(nCondVars == 0, "Bayesian Pearson Correlation", "Bayesian Pearson Partial Correlation")
 	    correlation[["citation"]] <- list(
 	        "Ly, A., Verhagen, A. J. & Wagenmakers, E.-J. (2016). Harold Jeffreys's Default Bayes Factor Hypothesis Tests: Explanation, Extension, and Application in Psychology. Journal of Mathematical Psychology, 72, 19-32.",
 	        "Ly, A., Marsman, M., Wagenmakers, E.-J. (2018). Analytic Posteriors for Pearson’s Correlation Coefficient. Statistica Neerlandica, 72(1), 4-13."
@@ -180,12 +183,18 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 	footnotes <- .newFootnotes()
 
 	# MarkUp: Define footnotes
+	if(nCondVars != 0 && options$corcoefficient == "Pearson"){
+	  .addFootnote(footnotes, paste0("All partial correlations are conditioned on variable(s): ", paste(condVars, collapse = ", "), "."),
+	               symbol="<i>Note</i>.")
+	}
+	
 	if (options$hypothesis == "correlatedPositively") {
 		.addFootnote(footnotes, "For all tests, the alternative hypothesis specifies that the correlation is positive.", symbol="<i>Note</i>.")
 	} else if (options$hypothesis == "correlatedNegatively") {
 		.addFootnote(footnotes, "For all tests, the alternative hypothesis specifies that the correlation is negative.", symbol="<i>Note</i>.")
 	}
 
+	
 	# TODO MarkUp: Plots General:
 	plotGroups <- list()
 	plots.correlation <- list()
@@ -217,7 +226,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 		}
 
 		if (options$plotScatter) {
-			if (!is.null(state) && currentPair %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && "plotScatter" %in% state$plotTypes) {
+			if (!is.null(state) && currentPair %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && "plotScatter" %in% state$plotTypes) {
 
 				# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 				# then, if the requested plot already exists, use it
@@ -259,7 +268,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 		if (options$plotPriorAndPosterior) {
 
 			if (!is.null(state) && currentPair %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-				&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && options$plotPriorAndPosteriorAdditionalInfo && "posteriorPlotAddInfo" %in% state$plotTypes) {
+				&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && options$plotPriorAndPosteriorAdditionalInfo && "posteriorPlotAddInfo" %in% state$plotTypes) {
 
 				# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 				# then, if the requested plot already exists, use it
@@ -314,7 +323,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 		}
 		if (options$plotBayesFactorRobustness) {
 			if (!is.null(state) && currentPair %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-				&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && options$plotBayesFactorRobustnessAdditionalInfo &&
+				&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && options$plotBayesFactorRobustnessAdditionalInfo &&
 				"robustnessPlotAddInfo" %in% state$plotTypes) {
 				#
 				# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
@@ -369,7 +378,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 
 		if (options$plotSequentialAnalysis) {
 		    if (!is.null(state) && currentPair %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-				&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && options$plotSequentialAnalysisRobustness && "sequentialRobustnessPlot" %in% state$plotTypes) {
+				&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && options$plotSequentialAnalysisRobustness && "sequentialRobustnessPlot" %in% state$plotTypes) {
 		        # if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 				# then, if the requested plot already exists, use it
 
@@ -464,7 +473,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 				unplotableMessageScatter <- NULL
 
 				if (!is.null(state) && tablePairs[[i]] %in% state$tablePairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE
-					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$corcoefficient == FALSE))) {
+					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$corcoefficient == FALSE && diff$condVars == FALSE))) {
 
 					stateIndex <- which(state$tablePairs == paste(pair, collapse=" - "))[1]
 
@@ -523,24 +532,44 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 					    # Data okay, load data
 					    #
 					    if (options$missingValues=="excludeAnalysisByAnalysis") {
+					      if(nCondVars == 0){
 					        subDataSet <- subset(dataset, select=c(.v(pair[[1]]), .v(pair[[2]])) )
+					      } else { # partial correlation
+					        subDataSet <- subset(dataset, select=c(.v(pair[[1]]), .v(pair[[2]]), .v(condVars)))
+					      }
 					        subDataSet <- na.omit(subDataSet)
 
 					        v1 <- subDataSet[[ .v(pair[[1]]) ]]
 					        v2 <- subDataSet[[ .v(pair[[2]]) ]]
+					      if(nCondVars != 0){
+					        z <- subDataSet[, .v(condVars) ]
+					      } else{ 
+					        z <- NULL}   
 					    } else if (options$missingValues == "excludeListwise") {
 					        v1 <- dataset[[ .v(pair[[1]]) ]]
 					        v2 <- dataset[[ .v(pair[[2]]) ]]
+					        
+					      if(nCondVars != 0){
+					        z <- dataset[, .v(condVars)]
+					      } else{
+					        z <- NULL
+					      }
 					    }
 
 					    #----------------------- compute r & BF ----------------------#
-					    if (usePearson) {
+					    if (usePearson && nCondVars == 0) {
 					        rObs <- cor(v1, v2)
 					    } else if (useKendall) {
 					        rObs <- cor(v1, v2, method="kendall")
+					    } else if(usePearson && nCondVars != 0){ # partial correlation
+					        rObs <- ppcor::pcor.test(v1, v2, z, method = "pearson")[['estimate']]
 					    }
-
-					    nObs <- length(v1)
+					  
+              if(nCondVars == 0){
+					      nObs <- length(v1)
+              } else { # partial correlation
+                nObs <- length(v1) - nCondVars
+              }
 
 					    # Data check
 					    #
@@ -651,11 +680,18 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 
 			if (perform == "run" && status$unplotable == FALSE) {
 
-				subDataSet <- subset(dataset, select=c(.v(pair[[1]]), .v(pair[[2]])) )
+				subDataSet <- subset(dataset, select=c(.v(pair[[1]]), .v(pair[[2]]), .v(condVars)) )
 				subDataSet <- na.omit(subDataSet)
 
 				v1 <- subDataSet[[ .v(pair[[1]]) ]]
 				v2 <- subDataSet[[ .v(pair[[2]]) ]]
+				
+				if(nCondVars != 0 && options$corcoefficient == "Pearson"){
+				  z <- subDataSet[, .v(condVars)]
+				} else {
+				  z <- NULL
+				}
+				
 				plotBF10post <- BF10post[i]
 
         if (options$bayesFactorType == "LogBF10") {
@@ -665,26 +701,34 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 
 				v1 <- NULL
 				v2 <- NULL
+				z  <- NULL
 			}
 
 			if (perform == "run" && status$unplotableScatter == FALSE) {
 
-				subDataSet2 <- subset(dataset, select=c(.v(pair[[1]]), .v(pair[[2]])) )
+				subDataSet2 <- subset(dataset, select=c(.v(pair[[1]]), .v(pair[[2]]), .v(condVars)) )
 				subDataSet2 <- na.omit(subDataSet2)
 
 				vs1 <- subDataSet2[[ .v(pair[[1]]) ]]
 				vs2 <- subDataSet2[[ .v(pair[[2]]) ]]
+				
+				if(nCondVars != 0 && options$corcoefficient == "Pearson"){
+				  zs <- subDataSet2[, .v(condVars)]
+				} else {
+				  zs <- NULL
+				}
 
 			} else {
 
 				vs1 <- NULL
 				vs2 <- NULL
+				zs  <- NULL
 			}
 
-
+      #### Scatter plot ----
 			if (options$plotScatter) {
 
-				if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs  && !is.null(diff) && ((is.list(diff)  && (diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$corcoefficient == FALSE))) && "plotScatter" %in% state$plotTypes) {
+				if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs  && !is.null(diff) && ((is.list(diff)  && (diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$corcoefficient == FALSE && diff$condVars == FALSE))) && "plotScatter" %in% state$plotTypes) {
 
 					# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 					# then, if the requested plot already exists, use it
@@ -709,9 +753,8 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 							# image <- .beginSaveImage(530, 400)
 							# .plotScatter.Bcorrelationpairs(xVar=vs1, yVar=vs2, xlab=pair[[1]], ylab=pair[[2]])
 							# plot[["data"]] <- .endSaveImage(image)
-
 							.plotFunc <- function() {
-								.plotScatter.Bcorrelationpairs(xVar=vs1, yVar=vs2, xlab=pair[[1]], ylab=pair[[2]])
+								.plotScatter.Bcorrelationpairs(xVar=vs1, yVar=vs2, zVar = zs, xlab=pair[[1]], ylab=pair[[2]])
 							}
 							content <- .writeImage(width = 530, height = 400, plot = .plotFunc, obj = TRUE)
 							plot[["convertible"]] <- TRUE
@@ -745,10 +788,11 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 
 			}
 
+			#### Prior and posterior plot ----
 			if (options$plotPriorAndPosterior) {
 
 				if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && options$plotPriorAndPosteriorAdditionalInfo && "posteriorPlotAddInfo" %in% state$plotTypes) {
+					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && options$plotPriorAndPosteriorAdditionalInfo && "posteriorPlotAddInfo" %in% state$plotTypes) {
 
 					# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 					# then, if the requested plot already exists, use it
@@ -758,7 +802,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 					plots.correlation[[j]] <- state$plotsCorrelation[[stateIndex]]
 
 				} else if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-							&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && !options$plotPriorAndPosteriorAdditionalInfo && "posteriorPlot" %in% state$plotTypes) {
+							&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && !options$plotPriorAndPosteriorAdditionalInfo && "posteriorPlot" %in% state$plotTypes) {
 
 					# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 					# if the requested plot already exists use it
@@ -786,7 +830,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 							#
 							# plot[["data"]] <- .endSaveImage(image)
 							.plotFunc <- function() {
-								.plotPosterior.correlation(r=rs[i], n=ns[i], oneSided=oneSided, BF=plotBF10post, BFH1H0=BFH1H0, addInformation=options$plotPriorAndPosteriorAdditionalInfo, kappa=options$priorWidth,corCoefficient=options$corcoefficient)
+								.plotPosterior.correlation(r=rs[i], n=ns[i], k = nCondVars, oneSided=oneSided, BF=plotBF10post, BFH1H0=BFH1H0, addInformation=options$plotPriorAndPosteriorAdditionalInfo, kappa=options$priorWidth,corCoefficient=options$corcoefficient)
 							}
 							content <- .writeImage(width = 530, height = 400, plot = .plotFunc, obj = TRUE)
 							plot[["convertible"]] <- TRUE
@@ -821,11 +865,12 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 				if ( ! .shouldContinue(callback(results)))
 					return()
 			}
-
+      
+			#### Robustness plot ----
 			if (options$plotBayesFactorRobustness) {
 
 				if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && options$plotBayesFactorRobustnessAdditionalInfo &&
+					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && options$plotBayesFactorRobustnessAdditionalInfo &&
 					"robustnessPlotAddInfo" %in% state$plotTypes) {
 					# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 					# then, if the requested plot already exists, use it
@@ -833,7 +878,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 					plots.correlation[[j]] <- state$plotsCorrelation[[stateIndex]]
 
 				} else if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && !options$plotBayesFactorRobustnessAdditionalInfo &&
+					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && !options$plotBayesFactorRobustnessAdditionalInfo &&
 					"robustnessPlot" %in% state$plotTypes) {
 					# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 					# then, if the requested plot already exists, use it
@@ -897,11 +942,11 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 					return()
 			}
 
-
+      #### Sequential plot ----
 			if (options$plotSequentialAnalysis) {
 
 				if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && options$plotSequentialAnalysisRobustness && "sequentialRobustnessPlot" %in% state$plotTypes) {
+					&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && options$plotSequentialAnalysisRobustness && "sequentialRobustnessPlot" %in% state$plotTypes) {
 
 					# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 					# then, if the requested plot already exists, use it
@@ -911,7 +956,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 					plots.correlation[[j]] <- state$plotsCorrelation[[stateIndex]]
 
 				} else if (!is.null(state) && tablePairs[[i]] %in% state$plotPairs && !is.null(diff) && (is.list(diff) && (diff$priorWidth == FALSE && diff$hypothesis == FALSE && diff$corcoefficient == FALSE
-							&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE)) && !options$plotSequentialAnalysisRobustness  && "sequentialPlot" %in% state$plotTypes) {
+							&& diff$bayesFactorType == FALSE && diff$missingValues == FALSE && diff$plotWidth == FALSE && diff$plotHeight == FALSE && diff$condVars == FALSE)) && !options$plotSequentialAnalysisRobustness  && "sequentialPlot" %in% state$plotTypes) {
 
 					# if there is state and the variable has been plotted before and there is either no difference or only the variables or requested plot types have changed
 					# if the requested plot already exists use it
@@ -939,7 +984,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 							# plot[["data"]] <- .endSaveImage(image)
 
 							.plotFunc <- function() {
-								.plotSequentialBF.correlation(x=v1, y=v2, oneSided=oneSided, BF=plotBF10post, BFH1H0=BFH1H0, kappa=options$priorWidth,corCoefficient=options$corcoefficient)
+								.plotSequentialBF.correlation(x=v1, y=v2, z = z, oneSided=oneSided, BF=plotBF10post, BFH1H0=BFH1H0, kappa=options$priorWidth,corCoefficient=options$corcoefficient)
 							}
 							content <- .writeImage(width = 530, height = 400, plot = .plotFunc, obj = TRUE)
 							plot[["convertible"]] <- TRUE
@@ -995,8 +1040,20 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 }
 
 
-.plotScatter.Bcorrelationpairs <- function(xVar=NULL, yVar=NULL, xlab, ylab, dontPlotData=FALSE, cexPoints= 1.3, cexXAxis= 1.3, cexYAxis= 1.3, lwd= 2, lwdAxis=1.2) {
-
+.plotScatter.Bcorrelationpairs <- function(xVar=NULL, yVar=NULL, zVar = NULL, xlab, ylab, dontPlotData=FALSE, cexPoints= 1.3, cexXAxis= 1.3, cexYAxis= 1.3, lwd= 2, lwdAxis=1.2) {
+  if(!is.null(zVar)){ # if partial, plot residuals
+  #browser()
+    d <- data.frame(xx = xVar, yy = yVar)
+    d <- cbind(d, zVar) #zVar can be a data frame itself
+    d <- na.omit(d)
+    
+    xVar <- residuals(lm(d[['xx']] ~ as.matrix(d[,3:ncol(d)])))
+    yVar <- residuals(lm(d[['yy']] ~ as.matrix(d[,3:ncol(d)])))
+    
+    xlab <- paste("Residuals of", xlab)
+    ylab <- paste("Residuals of", ylab)
+  }
+  
 	op <- par(mar= c(5.6, 7, 4, 4) + 0.1, las=1, xpd=FALSE)
 
 	if (dontPlotData) {
@@ -1058,11 +1115,14 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 }
 
 .plotPosterior.correlation <- function(n, r, kappa=1, oneSided= FALSE, BF, BFH1H0, addInformation= TRUE, dontPlotData=FALSE, lwd= 2,corCoefficient="Pearson",
-										cexPoints= 1.5, cexAxis= 1.2, cexYlab= 1.5, cexXlab= 1.5, cexTextBF= 1.4, cexCI= 1.1, cexLegend= 1.2, lwdAxis= 1.2) {
+										cexPoints= 1.5, cexAxis= 1.2, cexYlab= 1.5, cexXlab= 1.5, cexTextBF= 1.4, cexCI= 1.1, cexLegend= 1.2, lwdAxis= 1.2, k = 0) {
 
   useKendall <- corCoefficient == "Kendall"
   usePearson <- corCoefficient == "Pearson"
-
+  
+  if(usePearson){
+    n <- n - k
+  }
 	if (addInformation) {
 
 		par(mar= c(5.6, 5, 7, 4) + 0.1, las=1)
@@ -1283,7 +1343,8 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 	}
 
 	if (usePearson) {
-	  mtext(expression("Population correlation" ~ rho), side = 1, cex = cexXlab, line= 2.6)
+	  what <- ifelse(k == 0, "Population correlation", "Population partial correlation")
+	  mtext(bquote(.(what) ~ rho), side = 1, cex = cexXlab, line= 2.6)
 	} else {
 	    mtext(expression("Population correlation" ~ tau), side = 1, cex = cexXlab, line= 2.6)
 	}
@@ -2237,7 +2298,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 }
 
 
-.plotSequentialBF.correlation <- function(x= NULL, y= NULL, BF10post, kappa=1, callback=function(...) 0, oneSided= FALSE, lwd= 2, cexPoints= 1.4, cexAxis= 1.2, cexYlab= 1.5, cexXlab= 1.6,
+.plotSequentialBF.correlation <- function(x= NULL, y= NULL, z = NULL, BF10post, kappa=1, callback=function(...) 0, oneSided= FALSE, lwd= 2, cexPoints= 1.4, cexAxis= 1.2, cexYlab= 1.5, cexXlab= 1.6,
  cexTextBF= 1.4, cexText=1.2, cexLegend= 1.2, cexEvidence= 1.6,	lwdAxis= 1.2, plotDifferentPriors= FALSE, BFH1H0= TRUE, dontPlotData= FALSE,corCoefficient="Pearson") {
 
 	#### settings ####
@@ -2304,7 +2365,7 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 	}
 
 	BF10 <- vector("numeric", length(x))
-
+	
 	for (i in seq_along(x)) {
 
 		if (i == 1) {
@@ -2315,17 +2376,25 @@ CorrelationBayesianPairs <- function(dataset=NULL, options, perform="run", callb
 
 			BF10[i] <- 1
 
-		} else {
+		} else if(!is.null(z) && !matrixcalc::is.positive.definite(cor(cbind(x,y,z)[1:i,]))){ 
+		  # check whether the correlation matrix can be inverted (for ppcor:pcor.test)
+		  BF10[i] <- 1
+		}else {
 
 			nObs <- i
 
-			if (usePearson) {
+			if (usePearson && is.null(z)) {
 			    rObs <- cor(x[1:i], y[1:i])
 			    bfObject <- .bfPearsonCorrelation(n=nObs, r=rObs, kappa=kappa, ciValue=NULL)
 			} else if (useKendall) {
 			    rObs <- cor(x[1:i], y[1:i], method="kendall")
 			    # TODO Johnny: I removed var=1 as it's default
 			    bfObject <- .bfKendallTau(n=nObs, tauObs=rObs, kappa=kappa, ciValue=NULL)
+			} else if(usePearson && !is.null(z)){ # partial correlation
+			    z <- as.matrix(z)
+			  # TODO: add some error handling (pcor.test uses matrix inversion, the cor matrix needs to be positive-definite)
+			    rObs <- ppcor::pcor.test(x[1:i], y[1:i], z[1:i,], method = "pearson")[['estimate']]
+			    bfObject <- .bfPearsonCorrelation(n=nObs-ncol(z), r=rObs, kappa=kappa, ciValue=NULL)
 			}
 
 			if (oneSided == FALSE) {

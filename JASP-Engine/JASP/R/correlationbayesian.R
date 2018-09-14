@@ -68,12 +68,13 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 	meta[[3]] <- list(name="plot", type="image")
 
 	results[[".meta"]] <- meta
-	results[["title"]] <- "Bayesian Correlation Matrix"
+	results[["title"]] <- ifelse(!options$partial, "Bayesian Correlation Matrix", "Bayesian Partial Correlation Matrix")
 	correlationTableOutput <-
 		.correlationTableBayesian(dataset, perform, variables=options$variables,
 								  pearson=options$pearson,
 								  kendallsTauB=options$kendallsTauB,
 								  spearman=options$spearman,
+								  partial=options$partial,
 								  hypothesis=options$hypothesis,
 								  reportBayesFactors=options$reportBayesFactors,
 								  flagSupported=options$flagSupported,
@@ -92,7 +93,7 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 
 	if (!is.null(state) && !is.null(diff) && ((is.logical(diff) && diff == FALSE) || (is.list(diff) && (diff$credibleInterval == FALSE && diff$ciValue == FALSE
 																										&& diff$hypothesis == FALSE && diff$kendallsTauB == FALSE && diff$missingValues == FALSE && diff$pearson == FALSE && diff$plotCorrelationMatrix == FALSE
-																										&& diff$plotDensitiesForVariables == FALSE && diff$plotPosteriors == FALSE && diff$spearman == FALSE && diff$variables == FALSE && diff$priorWidth == FALSE)))) {
+																										&& diff$plotDensitiesForVariables == FALSE && diff$plotPosteriors == FALSE && diff$spearman == FALSE && diff$variables == FALSE && diff$priorWidth == FALSE && diff$partial == FALSE && options$partial == FALSE)))) {
 
 		results[["plot"]] <- state$correlationPlot
 
@@ -134,17 +135,18 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 # "ciValue": OptionNumber(.95, 0, 1, "%"));
 # "priorWidth": c(0.5, Inf)
 # "bayesFactorType": BF10/BF01
-.correlationTableBayesian <- function(dataset, perform, variables, pearson=TRUE,
-									  kendallsTauB=FALSE, spearman=FALSE,
-									  hypothesis="correlated",
-									  reportBayesFactors=TRUE,
-									  flagSupported=FALSE,
-									  credibleInterval=FALSE,
-									  ciValue=0.95,
-									  priorWidth=priorWidth,
-									  bayesFactorType=bayesFactorType,
-									  missingValues="excludePairwise",
-									  state, diff) {
+.correlationTableBayesian <- function(dataset, perform, variables, 
+                                      pearson=TRUE, kendallsTauB=FALSE, spearman=FALSE,
+                                      partial = FALSE,
+                                      hypothesis="correlated",
+                                      reportBayesFactors=TRUE,
+                                      flagSupported=FALSE,
+                                      credibleInterval=FALSE,
+                                      ciValue=0.95,
+                                      priorWidth=priorWidth,
+                                      bayesFactorType=bayesFactorType,
+                                      missingValues="excludePairwise",
+                                      state, diff) {
 	# Note: This is the default failed bfObject for wrong data
     #
     failedBfObject <- list(n=NaN, r=NaN, stat=NA, bf10=NaN, bfPlus0=NA, bfPlus0=NA, bfMin0=NA, ciValue=ciValue, ci=list())
@@ -206,14 +208,18 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 		tests <- c(tests, "spearman")
 	if (kendallsTauB)
 		tests <- c(tests, "kendall")
-
+  if(partial){
+    tests <- tests[tests == "pearson"]
+  }
 	# MarkUp: General: Assign name to table
 	#
 	# Note: Naming of the table
 	if (length(tests) != 1) {
 		correlationTable[["title"]] <- paste("Bayesian Correlation Table")
 	} else if (pearson) {
-		correlationTable[["title"]] <- paste("Bayesian Pearson Correlations")
+		correlationTable[["title"]] <- ifelse(partial,
+		                                      paste("Bayesian Pearson Partial Correlations"),
+		                                      paste("Bayesian Pearson Correlations"))
 	} else if (spearman) {
 		correlationTable[["title"]] <- paste("Bayesian Spearman Correlations")
 	} else if (kendallsTauB) {
@@ -232,7 +238,11 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 	#
 	# Note: create footnote function
 	footnotes <- .newFootnotes()
-
+  if(partial){
+    .addFootnote(footnotes, "Each partial correlation is conditioned on the rest of the variables in the correlation matrix.",
+                 symbol="<i>Note</i>.")
+    
+  }
 	if (flagSupported || reportBayesFactors) {
 		if (hypothesis == "correlatedPositively") {
 			.addFootnote(footnotes, "For all tests, the alternative hypothesis specifies that the correlation is positive.", symbol="<i>Note</i>.")
@@ -253,7 +263,7 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 
 	# State: Processing
 	#
-	if (!is.null(state)) {
+	if (!is.null(state) && !partial && diff$partial == FALSE) {
 		# Retrieve from state,
 		# Pairwise based on names
 		memoryExcludePairwise <- state$memoryExcludePairwise
@@ -290,7 +300,6 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 	# Update number of variables, hence, from here it's always >= 2, thus, outputting a table of 2 by 2
 	#
 	numberOfVariables <- length(variables)
-
 
 	# Filling in goes row wise and fill in each column with an entry
 	#
@@ -572,7 +581,17 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 								# Data: OK
 								# Try: Calculte bfs
 
-							    if (missingValues=="excludePairwise"){
+							    if(partial){
+							      cleanDataset <- na.omit(dataset)
+							      v1 <- cleanDataset[[ .v(variableName) ]]
+							      v2 <- cleanDataset[[ .v(variable2Name) ]]
+							      condVars <- variables[!variables %in% c(variableName, variable2Name)]
+							      z  <- cleanDataset[,.v(condVars)]
+							      pcor <- ppcor::pcor.test(v1, v2, z, method = "pearson")
+							      rObs <- pcor[['estimate']]
+							      nObs <- pcor[['n']] - pcor[['gp']]
+							      
+							    } else if (missingValues=="excludePairwise"){
 							        subDataSet <- subset(dataset, select=c(.v(variableName), .v(variable2Name)) )
 							        subDataSet <- na.omit(subDataSet)
 
@@ -582,9 +601,11 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 							        v1 <- dataset[[ .v(variableName) ]]
 							        v2 <- dataset[[ .v(variable2Name) ]]
 							    }
-
-							    nObs <- length(v1)
-							    rObs <- cor(v1, v2, method=test)
+							  
+                  if(!partial){
+							      nObs <- length(v1)
+							      rObs <- cor(v1, v2, method=test)
+                  }
 
 							    if (test == "pearson") {
 							        # TODO: perhaps call this .bfCorrelation(, method=..), where method="pearson", "kendall" or "spearman"
@@ -2312,18 +2333,31 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 }
 
 #### Plotting Function for posterior ####
-.plotPosterior.BayesianCorrelationMatrix <- function(x, y, kappa=1, oneSided= FALSE, addInformation= FALSE, drawCI= FALSE, lwd= 2, cexPoints= 1.5, cexAxis= 1.2,
+.plotPosterior.BayesianCorrelationMatrix <- function(x, y, condVars = NULL, kappa=1, oneSided= FALSE, addInformation= FALSE, drawCI= FALSE, lwd= 2, cexPoints= 1.5, cexAxis= 1.2,
                                                      cexYlab= 1.5, cexXlab= 1.28, cexTextBF= 1.4, cexCI= 1.1, cexLegend= 1.2, lwdAxis= 1.2, addRho= TRUE, addTau= FALSE) {
 
 	tooPeaked <- FALSE
-	screenedData <- .excludePairwiseCorData(x, y)
+	
+	if(is.null(condVars)){
+	  screenedData <- .excludePairwiseCorData(x, y)
 
-	x <- screenedData$v1
-	y <- screenedData$v2
+	  x <- screenedData$v1
+	  y <- screenedData$v2
 
-	r <- cor(x, y)
-	tau <- cor(x, y, method="kendall")
-	n <- length(x)
+	  r <- cor(x, y)
+	  tau <- cor(x, y, method="kendall")
+	  n <- length(x)
+	  
+	} else{
+	  d <- cbind(x, y, condVars)
+	  d <- na.omit(d)
+	  
+	  r <- ppcor::pcor.test(d[,1], d[,2], d[,-c(1,2)])[['estimate']]
+	  n <- nrow(d) - ncol(d) + 2
+	  addTau <- FALSE # we do not have a method for Kendall's tau partial corr
+	  tau <- ppcor::pcor.test(d[,1], d[,2], d[,-c(1,2)], method = "kendall")[['estimate']]
+	}
+	
 	# set limits plot
 	xlim <- c(-1, 1)
 
@@ -2522,7 +2556,7 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 
 			plot <- list()
 
-			plot[["title"]] <- "Correlation Plot"
+			plot[["title"]] <- ifelse(!options$partial, "Correlation Plot", "Residuals Plot")
 			plot[["width"]]  <- width
 			plot[["height"]] <- height
 
@@ -2599,7 +2633,7 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 
 		plot <- list()
 
-		plot[["title"]] <-  "Correlation Plot"
+		plot[["title"]] <-  ifelse(!options$partial, "Correlation Plot", "Residuals Plot")
 		plot[["width"]]  <- width
 		plot[["height"]] <- height
 
@@ -2651,11 +2685,14 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 						for (col in seq_len(l)) {
 
 							if (row == col) {
-
+#browser()
 								if (options$plotDensities) {
-
-									if ( ! variable.statuses[[row]]$unplotable) {
+#### Call .plotMarginalCor (delete comment later) ----
+									if ( ! variable.statuses[[row]]$unplotable && !options$partial) {
 										.plotMarginalCor(dataset[[variables[row]]]) # plot marginal (histogram with density estimator)
+									} else if(! variable.statuses[[row]]$unplotable && options$partial){
+									  condVarsMarginal <- variables[! variables %in% variables[[row]]]
+									  .plotMarginalCor(variable = dataset[[variables[row]]], condVars = dataset[,condVarsMarginal])
 									} else {
 										.displayError(variable.statuses[[row]]$plottingError, cexText=cexText)
 									}
@@ -2668,8 +2705,11 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 
 							if (col > row) {
 								if (options$plotCorrelationMatrix) {
-									if ( ! variable.statuses[[col]]$unplotable && ! variable.statuses[[row]]$unplotable) {
+									if ( ! variable.statuses[[col]]$unplotable && ! variable.statuses[[row]]$unplotable && !options$partial) {
 										.plotScatter(dataset[[variables[col]]], dataset[[variables[row]]]) # plot scatterplot
+									} else if(! variable.statuses[[row]]$unplotable && ! variable.statuses[[row]]$unplotable && options$partial){
+									  condVarsScatter <- variables[! variables %in% c(variables[[row]], variables[[col]])]
+									  .plotScatter(dataset[[variables[col]]], dataset[[variables[row]]], condVars = dataset[,condVarsScatter]) # plot residualplot
 									} else {
 										errorMessages <- c(variable.statuses[[row]]$plottingError, variable.statuses[[col]]$plottingError)
 										errorMessagePlot <- paste0("Correlation coefficient undefined:", "\n", errorMessages[1])
@@ -2684,8 +2724,13 @@ CorrelationBayesian <- function(dataset=NULL, options, perform="run",
 
 								if (options$plotPosteriors) {
 
-									if ( ! variable.statuses[[col]]$unplotable && ! variable.statuses[[row]]$unplotable) {
+									if ( ! variable.statuses[[col]]$unplotable && ! variable.statuses[[row]]$unplotable && !options$partial) {
 										.plotPosterior.BayesianCorrelationMatrix(dataset[[variables[col]]], dataset[[variables[row]]], oneSided=oneSided, kappa=options$priorWidth, addRho= options$pearson, addTau=options$kendallsTauB)
+									} else if(! variable.statuses[[row]]$unplotable && options$partial){
+									  condVarsScatter <- variables[! variables %in% c(variables[[row]], variables[[col]])]
+									  .plotPosterior.BayesianCorrelationMatrix(dataset[[variables[col]]], dataset[[variables[row]]], condVars = dataset[,condVarsScatter],
+									                                           oneSided=oneSided, kappa=options$priorWidth, addRho= options$pearson, addTau=options$kendallsTauB)
+									  
 									} else {
 										errorMessages <- c(variable.statuses[[row]]$plottingError, variable.statuses[[col]]$plottingError)
 										errorMessagePlot <- paste0("Correlation coefficient undefined:", "\n", errorMessages[1])

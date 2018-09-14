@@ -22,6 +22,11 @@
 			"name": "spearman",
 			"type": "Boolean"
 		},
+        {
+            "default": false,
+            "name": "partial",
+            "type": "Boolean"
+        },
 		{
 			"name": "hypothesis",
 			"options": [ "correlated", "correlatedPositively", "correlatedNegatively" ],

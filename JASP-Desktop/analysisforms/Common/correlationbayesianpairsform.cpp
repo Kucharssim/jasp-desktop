@@ -44,12 +44,39 @@ CorrelationBayesianPairsForm::CorrelationBayesianPairsForm(QWidget *parent) :
 
 	ui->assignButton->setSourceAndTarget(ui->availableFields, ui->pairs);
 
+
+    ui->availableCondVars->setModel(&_availableVariablesModel);
+
+    _condVariables = new TableModelVariablesAssigned(this);
+    _condVariables->setVariableTypesSuggested(Column::ColumnTypeScale);
+    _condVariables->setVariableTypesAllowed(Column::ColumnTypeNominal | Column::ColumnTypeOrdinal | Column::ColumnTypeScale);
+    _condVariables->setSource(&_availableVariablesModel);
+    ui->condVars->setModel(_condVariables);
+    ui->availableCondVars->setDoubleClickTarget(ui->condVars);
+    ui->assignCondVars->setSourceAndTarget(ui->availableCondVars, ui->condVars);
+
+    //ui->_availableCondVariables->setModel(&_availableVariablesModel);
+    //_availableCondVariables = new TableModelVariablesAvailable();
+
+    //_availableCondVariables->setSource(_availableVariablesModel);
+    //ui->availableCondVars->setModel(&_availableCondVariables);
+
+    //_condVariables = new TableModelVariablesAssigned(this);
+    //_condVariables->setSource(&_availableCondVariables);
+    //_condVariables->setVariableTypesAllowed(Column::ColumnTypeNominal | Column::ColumnTypeOrdinal | Column::ColumnTypeScale);
+    //_condVariables->setVariableTypesSuggested(Column::ColumnTypeScale | Column::ColumnTypeOrdinal);
+    //ui->condVars->setModel(_condVariables);
+
+    //ui->parCorContainer->hide();
+
 #ifndef JASP_DEBUG
 	ui->plotSequentialAnalysisRobustness->hide();
     ui->ciValueContainer->hide();
 #else
-	ui->plotSequentialAnalysisRobustness->setStyleSheet("background-color: pink;");
-    ui->ciValueContainer->setStyleSheet("background-color: pink;");
+    ui->plotSequentialAnalysisRobustness->hide(); // delete
+    ui->ciValueContainer->hide(); //delete
+    //ui->plotSequentialAnalysisRobustness->setStyleSheet("background-color: pink;"); //uncomment
+    //ui->ciValueContainer->setStyleSheet("background-color: pink;"); // uncomment
 #endif
 	ui->priorWidth->setLabel("Beta* prior width");
 }

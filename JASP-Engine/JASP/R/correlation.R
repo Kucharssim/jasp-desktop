@@ -51,7 +51,9 @@ Correlation <- function(dataset=NULL, options, perform="run", callback=function(
   correlation.table <- .fillCorrelationTable(tableData, displayPairwise=options$displayPairwise, 
                                              reportSignificance=options$reportSignificance,
                                              reportCI=options$confidenceIntervals,
-                                             flagSignificant=options$flagSignificant, reportVovkSellkeMPR=options$VovkSellkeMPR)
+                                             flagSignificant=options$flagSignificant,
+                                             reportVovkSellkeMPR=options$VovkSellkeMPR,
+                                             partial = options$partial)
 
   results <- list()
 
@@ -116,6 +118,92 @@ Correlation <- function(dataset=NULL, options, perform="run", callback=function(
   }
   
   pairs <- combn(variables, 2, simplify=FALSE)
+  
+  if(options$partial && perform == "run" && ready){
+    # no state: adding a variable initiates complete recomputation
+    pairNames <- sapply(pairs, function(x) paste(sort(x), collapse = "-"))
+    
+    # prepare a named list for result storage
+    testResult <- as.list(tests)
+    names(testResult) <- tests
+    
+    result <- as.list(pairNames)
+    names(result) <- pairNames
+    result <- lapply(result, function(x) testResult)
+    
+    cleanDataset <- na.omit(dataset)
+
+    # calculate partial correlation matrix for each test
+    for(test in tests){
+      
+      # calculate partial correlation matrix
+      pcor <- ppcor::pcor(cleanDataset, method = test)
+      
+      # loop over pairs, extract stats
+      testResult <- lapply(pairs, function(pair){
+        vpair <- .v(pair)
+        estimate <- as.numeric(pcor$estimate[vpair[1], vpair[2]])
+        p.value <- as.numeric(pcor$p.value[vpair[1], vpair[2]])
+        
+        if(options$hypothesis == "correlatedPositively"){
+          p.value <- ifelse(estimate > 0, p.value/2, 1)
+        } else if(options$hypothesis == "correlatedNegatively"){
+          p.value <- ifelse(estimate < 0 , p.value/2, 1)
+        }
+        MPR <- .VovkSellkeMPR(p.value)
+        
+        if(test == "pearson"){
+          if(options$hypothesis == "correlated"){
+            alpha <- 1-options$confidenceIntervalsInterval
+            ci <- .createPearsonPartialCorrelationCI(alpha = alpha,
+                                                     cor=estimate,
+                                                     k=pcor$gp,
+                                                     n=pcor$n)
+            lowerCI <- ci[1]
+            upperCI <- ci[2]
+          } else if(options$hypothesis != "correlated"){
+            halfAlpha <- (1-options$confidenceIntervalsInterval)/2
+            ci <- .createPearsonPartialCorrelationCI(alpha = halfAlpha,
+                                                     cor=estimate,
+                                                     k=pcor$gp,
+                                                     n=pcor$n)
+            lowerCI <- ifelse(options$hypothesis == "correlatedPositively", ci[1], -1)
+            upperCI <- ifelse(options$hypothesis == "correlatedNegatively", ci[2], 1)
+          }
+        } else{
+          upperCI <- lowerCI <- NA
+        }
+        
+        r <- list(
+          estimate = .clean(estimate),
+          p.value = .clean(p.value),
+          MPR = .clean(MPR),
+          lowerCI = .clean(lowerCI),
+          upperCI = .clean(upperCI),
+          errorMessage = NULL
+        )
+        
+        if(test == "pearson"){
+          return(list(pearson = r))
+        } else if(test == "kendall"){
+          return(list(kendall = r))
+        } else if(test == "spearman"){
+          return(list(spearman = r))
+        } else {
+          return(list(test = r))
+        }
+      })  
+      
+      # put the extract stats into the result list
+      names(testResult) <- pairNames
+      
+      result <- utils::modifyList(result, testResult)
+    }
+    
+    results[['result']] <- result
+    
+    return(results)
+  }
   
   for (i in seq_along(pairs)) {
     # 
@@ -193,7 +281,7 @@ Correlation <- function(dataset=NULL, options, perform="run", callback=function(
 }
 
 .fillCorrelationTable <- function(tableData, displayPairwise=FALSE, reportSignificance=FALSE, 
-  reportCI=FALSE, reportVovkSellkeMPR=FALSE, flagSignificant=FALSE) {
+  reportCI=FALSE, reportVovkSellkeMPR=FALSE, flagSignificant=FALSE, partial = FALSE) {
 
   correlation.table <- list()
   
@@ -212,6 +300,14 @@ Correlation <- function(dataset=NULL, options, perform="run", callback=function(
   
   hypothesis <- tableData$hypothesis
   footnotes <- .newFootnotes()
+  if(partial){
+    correlation.table[["title"]] <- gsub(pattern = "Correlation", replacement = "Partial Correlation", correlation.table[["title"]])
+    .addFootnote(footnotes, "Each partial correlation is conditioned on the rest of the  selected variables.", symbol="<i>Note</i>.")
+    if(reportCI && any(c("kendall", "spearman") %in% tests)){
+      .addFootnote(footnotes, "Confidence intervals for partial Kendall's tau and Spearman rank coefficients are currently not available.", symbol="<i>Note</i>.")
+    }
+  }
+  
   if (flagSignificant || reportSignificance) {
     if (hypothesis == "correlatedPositively") {
       .addFootnote(footnotes, "all tests one-tailed, for positive correlation", symbol="<i>Note</i>.")
@@ -638,8 +734,18 @@ Correlation <- function(dataset=NULL, options, perform="run", callback=function(
 }
 
 #### histogram with density estimator ####
-.plotMarginalCor <- function(variable, cexYlab= 1.3, lwd= 2, rugs= FALSE) {
-  variable <- variable[!is.na(variable)]
+.plotMarginalCor <- function(variable, condVars = NULL, cexYlab= 1.3, lwd= 2, rugs= FALSE) {
+
+  if(is.null(condVars)){
+    variable <- variable[!is.na(variable)]
+  } else {
+    d <- cbind(variable, condVars)
+    d <- na.omit(d)
+    variable <- d[[1]]
+    condVars <- as.matrix(d[,-1])
+    
+    variable <- residuals(lm(variable~condVars))
+  }
 
   density <- density(variable)
   h <- hist(variable, plot = FALSE)
@@ -693,11 +799,25 @@ Correlation <- function(dataset=NULL, options, perform="run", callback=function(
 }
 
 
-.plotScatter <- function(xVar, yVar, cexPoints= 1.3, cexXAxis= 1.3, cexYAxis= 1.3, lwd= 2) {
-  d <- data.frame(xx= xVar, yy= yVar)
-  d <- na.omit(d)
-  xVar <- d$xx
-  yVar <- d$yy
+.plotScatter <- function(xVar, yVar, condVars = NULL, cexPoints= 1.3, cexXAxis= 1.3, cexYAxis= 1.3, lwd= 2) {
+  if(is.null(condVars)){
+    d <- data.frame(xx= xVar, yy= yVar)
+    d <- na.omit(d)
+    xVar <- d$xx
+    yVar <- d$yy
+    
+  } else {
+    d <- cbind(xVar, yVar, condVars)
+    d <- na.omit(d)
+    xVar <- d[,1]
+    yVar <- d[,2]
+    condVars <- as.matrix(d[,-c(1:2)])
+    #browser()
+    xVar <- residuals(lm(xVar ~ condVars))
+    yVar <- residuals(lm(yVar ~ condVars))
+    
+    d <- data.frame(xx= xVar, yy= yVar)
+  }
 
   # fit different types of regression
   fit <- vector("list", 1)# vector("list", 4)
@@ -923,4 +1043,25 @@ Correlation <- function(dataset=NULL, options, perform="run", callback=function(
     }
   }
   return(c(ciLow,ciUp))
+}
+
+.createPearsonPartialCorrelationCI <- function(alpha, cor, k, n) {
+  # Computes a confidence interval for a population 
+  # (partial) Pearson correlation
+  # Arguments: 
+  #   alpha: alpha value for 1-alpha confidence
+  #   cor:   sample value of (partial) correlation 
+  #   k:     number of controlling variables
+  #   n:     sample size
+  # Returns:
+  #   confidence interval
+  z <- qnorm(1 - alpha/2)
+  se <- sqrt(1/((n - k - 3)))
+  zr <- log((1 + cor)/(1 - cor))/2
+  ll0 <- zr - z*se
+  ul0 <- zr + z*se
+  ll <- (exp(2*ll0) - 1)/(exp(2*ll0) + 1)
+  ul <- (exp(2*ul0) - 1)/(exp(2*ul0) + 1)
+  ci <- c(ll, ul)
+  return(ci)
 }

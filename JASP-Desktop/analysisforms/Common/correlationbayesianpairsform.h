@@ -35,6 +35,9 @@ public:
 
 private:
 	Ui::CorrelationBayesianPairsForm *ui;
+
+    TableModelVariablesAssigned *_condVariables;
+    TableModelVariablesAvailable *_availableCondVariables;
 };
 
 #endif // CORRELATIONBAYESIANPAIRSFORM_H

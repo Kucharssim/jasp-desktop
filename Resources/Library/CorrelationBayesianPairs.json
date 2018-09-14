@@ -7,6 +7,10 @@
 			"name": "pairs",
 			"type": "VariablesGroups"
 		},
+        {
+            "name": "condVars",
+            "type": "Variables"
+        },
 		{
 			"name": "corcoefficient",
 			"options": [ "Pearson", "Kendall"],

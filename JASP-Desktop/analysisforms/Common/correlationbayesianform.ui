@@ -190,13 +190,6 @@
             <string>Correlation Coefficients</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
-            <item row="2" column="0">
-             <widget class="BoundCheckBox" name="spearman">
-              <property name="text">
-               <string>Spearman</string>
-              </property>
-             </widget>
-            </item>
             <item row="0" column="0">
              <widget class="BoundCheckBox" name="pearson">
               <property name="text">
@@ -204,10 +197,24 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="0">
+            <item row="4" column="0">
              <widget class="BoundCheckBox" name="kendallsTauB">
               <property name="text">
                <string>Kendall's tau-b</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="BoundCheckBox" name="spearman">
+              <property name="text">
+               <string>Spearman</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="BoundCheckBox" name="partial">
+              <property name="text">
+               <string>Partial</string>
               </property>
              </widget>
             </item>
@@ -657,6 +664,54 @@
     <hint type="destinationlabel">
      <x>340</x>
      <y>342</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pearson</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>partial</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>78</x>
+     <y>272</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>172</x>
+     <y>272</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>partial</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>kendallsTauB</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>172</x>
+     <y>272</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>78</x>
+     <y>330</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>kendallsTauB</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>partial</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>78</x>
+     <y>330</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>172</x>
+     <y>272</y>
     </hint>
    </hints>
   </connection>
