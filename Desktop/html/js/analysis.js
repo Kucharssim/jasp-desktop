@@ -652,6 +652,10 @@ JASPWidgets.AnalysisView = JASPWidgets.View.extend({
 		$tempClone.replaceWith($innerElement);
 		$tempClone.empty();
 
+		renderMathInElement(this.el, {
+			throwOnError : false
+		  });
+  
 		if (results.error)
 			this.setHeightErroredAnalysis($innerElement);
 
