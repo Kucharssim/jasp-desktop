@@ -280,6 +280,7 @@ HEADERS += \
     utilities/languagemodel.h \
     utilities/simplecryptkey.h \
     data/labelfiltergenerator.h \
+    widgets/boundcontrolrestriktortextarea.h \
     widgets/filemenu/filemenuobject.h \
     widgets/filemenu/datalibrary.h \
     widgets/filemenu/filesystem.h \
@@ -475,6 +476,7 @@ SOURCES += \
     utilities/simplecrypt.cpp \
     utilities/languagemodel.cpp \
     data/labelfiltergenerator.cpp \
+    widgets/boundcontrolrestriktortextarea.cpp \
     widgets/filemenu/filemenuobject.cpp \
     widgets/filemenu/datalibrary.cpp \
     widgets/filemenu/filesystem.cpp \

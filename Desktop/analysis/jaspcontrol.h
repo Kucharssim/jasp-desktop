@@ -90,7 +90,7 @@ public:
 	enum class DropMode		{ DropNone			= static_cast<int>(Inclusive::MaxOnly)					+ 1,	DropInsert, DropReplace };
 	enum class ListViewType { AssignedVariables = static_cast<int>(DropMode::DropReplace)				+ 1,	Interaction, AvailableVariables, RepeatedMeasures, Layers, AvailableInteraction };
 	enum class AssignType	{ AssignDefault		= static_cast<int>(ListViewType::AvailableInteraction)	+ 1,	AssignCross, AssignMainEffects, AssignInteraction, AssignAll2Way, AssignAll3Way, AssignAll4Way, AssignAll5Way };
-	enum class TextType		{ TextTypeDefault	= static_cast<int>(AssignType::AssignAll5Way)			+ 1,	TextTypeModel, TextTypeRcode, TextTypeJAGSmodel, TextTypeSource, TextTypeLavaan };
+	enum class TextType		{ TextTypeDefault	= static_cast<int>(AssignType::AssignAll5Way)			+ 1,	TextTypeModel, TextTypeRcode, TextTypeJAGSmodel, TextTypeSource, TextTypeLavaan, TextTypeRestriktor };
 	enum class ModelType	{ Simple			= static_cast<int>(TextType::TextTypeLavaan)			+ 1,	GridInput, CustomContrasts, MultinomialChi2Model, JAGSDataInputModel, FilteredDataEntryModel };
 	enum class ItemType		{ String			= static_cast<int>(ModelType::FilteredDataEntryModel)	+ 1,	Integer, Double	};
 

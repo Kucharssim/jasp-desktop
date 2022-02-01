@@ -21,6 +21,7 @@
 #include "boundcontrolsourcetextarea.h"
 #include "boundcontroljagstextarea.h"
 #include "boundcontrollavaantextarea.h"
+#include "boundcontrolrestriktortextarea.h"
 
 #include <QFontDatabase>
 #include <QRegularExpression>
@@ -37,7 +38,7 @@ TextAreaBase::TextAreaBase(QQuickItem* parent)
 
 void TextAreaBase::setUpModel()
 {
-	if (_textType == TextType::TextTypeSource || _textType == TextType::TextTypeJAGSmodel || _textType == TextType::TextTypeLavaan)
+	if (_textType == TextType::TextTypeSource || _textType == TextType::TextTypeJAGSmodel || _textType == TextType::TextTypeLavaan || _textType == TextType::TextTypeRestriktor)
 	{
 		_model = new ListModelTermsAvailable(this);
 		_model->setNeedsSource(_textType == TextType::TextTypeLavaan);
@@ -50,10 +51,11 @@ void TextAreaBase::setUp()
 {
 	switch (_textType)
 	{
-	case TextType::TextTypeSource:		_boundControl = new BoundControlSourceTextArea(this);	break;
-	case TextType::TextTypeLavaan:		_boundControl = new BoundControlLavaanTextArea(this);	break;
-	case TextType::TextTypeJAGSmodel:	_boundControl = new BoundControlJAGSTextArea(this);		break;
-	default:							_boundControl = new BoundControlTextArea(this);			break;
+	case TextType::TextTypeSource:		_boundControl = new BoundControlSourceTextArea(this);		break;
+	case TextType::TextTypeLavaan:		_boundControl = new BoundControlLavaanTextArea(this);		break;
+	case TextType::TextTypeJAGSmodel:	_boundControl = new BoundControlJAGSTextArea(this);			break;
+	case TextType::TextTypeRestriktor:	_boundControl = new BoundControlRestriktorTextArea(this);	break;
+	default:							_boundControl = new BoundControlTextArea(this);				break;
 	}
 
 	JASPListControl::setUp();
