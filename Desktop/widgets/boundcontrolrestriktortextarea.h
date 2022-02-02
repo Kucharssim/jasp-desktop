@@ -2,6 +2,7 @@
 #define BOUNDCONTROLRESTRIKTORTEXTAREA_H
 
 #include "boundcontroltextarea.h"
+#include "restriktorsyntaxhighlighter.h"
 
 class BoundControlRestriktorTextArea : public BoundControlTextArea
 {
@@ -16,7 +17,8 @@ public:
 	QString		rScriptDoneHandler(const QString &result)	override;
 
 protected:
-	QString					_textEncoded;
+	QString	_textEncoded;
+	RestriktorSyntaxHighlighter*	_restriktorHighlighter	= nullptr;
 };
 
 #endif // BOUNDCONTROLRESTRIKTORTEXTAREA_H

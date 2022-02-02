@@ -338,6 +338,7 @@ HEADERS += \
     widgets/filemenu/currentdatafile.h \
     gui/jaspversionchecker.h \
     widgets/listmodeltableviewbase.h \
+    widgets/restriktorsyntaxhighlighter.h \
     widgets/sortmenumodel.h \
     widgets/sortable.h \
     widgets/listmodelfiltereddataentry.h \
@@ -533,6 +534,7 @@ SOURCES += \
     widgets/filemenu/currentdatafile.cpp \
     gui/jaspversionchecker.cpp \
     widgets/listmodeltableviewbase.cpp \
+    widgets/restriktorsyntaxhighlighter.cpp \
     widgets/sortmenumodel.cpp \
     widgets/sortable.cpp \
     widgets/listmodelfiltereddataentry.cpp \

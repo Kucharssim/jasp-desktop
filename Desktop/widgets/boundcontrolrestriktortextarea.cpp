@@ -14,6 +14,7 @@ BoundControlRestriktorTextArea::BoundControlRestriktorTextArea(TextAreaBase *tex
 	if(textDocumentQQuick)
 	{
 		QTextDocument* doc = textDocumentQQuick->textDocument();
+		_restriktorHighlighter = new RestriktorSyntaxHighlighter(doc);
 	}
 	else
 		Log::log()	<< "No document object found!" << std::endl;
@@ -53,6 +54,9 @@ void BoundControlRestriktorTextArea::checkSyntax()
 {
 	QString text = _textArea->text();
 	_textEncoded = tq(ColumnEncoder::columnEncoder()->encodeAll(fq(text)));
+
+	// Here we will call a syntax checker from jaspAnova/restriktor, but that is not written yet...
+	_textArea->runRScript("TRUE", true);
 }
 
 QString BoundControlRestriktorTextArea::rScriptDoneHandler(const QString &result)
