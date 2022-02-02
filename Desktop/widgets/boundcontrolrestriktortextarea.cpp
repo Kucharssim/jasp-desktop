@@ -44,17 +44,15 @@ bool BoundControlRestriktorTextArea::isJsonValid(const Json::Value &value)
 {
 	if (!value.isObject())						return false;
 	if (!value["syntaxOriginal"].isString())	return false;
+	if (!value["syntax"].isString())			return false;
 
 	return true;
 }
 
 void BoundControlRestriktorTextArea::checkSyntax()
 {
-	//QString text = _textArea->text();
-	QString checkCode = "TRUE";
-
-	_textArea->runRScript(checkCode, true);
-
+	QString text = _textArea->text();
+	_textEncoded = tq(ColumnEncoder::columnEncoder()->encodeAll(fq(text)));
 }
 
 QString BoundControlRestriktorTextArea::rScriptDoneHandler(const QString &result)
