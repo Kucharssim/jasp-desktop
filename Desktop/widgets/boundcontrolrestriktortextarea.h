@@ -13,11 +13,9 @@ public:
 	Json::Value	createJson()								override;
 	void		bindTo(const Json::Value &value)			override;
 
-	void		checkSyntax()								override;
-	QString		rScriptDoneHandler(const QString &result)	override;
+	Json::Value	createMeta()								override;
 
 protected:
-	QString	_textEncoded;
 	RestriktorSyntaxHighlighter*	_restriktorHighlighter	= nullptr;
 };
 

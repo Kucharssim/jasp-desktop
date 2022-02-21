@@ -24,51 +24,28 @@ void BoundControlRestriktorTextArea::bindTo(const Json::Value &value)
 {
 	if (value.type() != Json::objectValue) return;
 	BoundControlBase::bindTo(value);
+}
 
-	_textArea->setText(tq(value["syntaxOriginal"].asString()));
+Json::Value BoundControlRestriktorTextArea ::createMeta()
+{
+	Json::Value meta(BoundControlBase::createMeta());
 
-	checkSyntax();
+	meta["shouldEncode"] = true;
+
+	return meta;
 }
 
 Json::Value BoundControlRestriktorTextArea::createJson()
 {
-	Json::Value result;
 	std::string text = _textArea->text().toStdString();
 
-	result["syntaxOriginal"]	=	text;
-	result["syntax"]			=	text;
-
-	return result;
+	return text;
 }
 
 bool BoundControlRestriktorTextArea::isJsonValid(const Json::Value &value)
 {
 	if (!value.isObject())						return false;
-	if (!value["syntaxOriginal"].isString())	return false;
-	if (!value["syntax"].isString())			return false;
+	if (!value.isString())						return false;
 
 	return true;
-}
-
-void BoundControlRestriktorTextArea::checkSyntax()
-{
-	QString text = _textArea->text();
-	_textEncoded = tq(ColumnEncoder::columnEncoder()->encodeAll(fq(text)));
-
-	// Here we will call a syntax checker from jaspAnova/restriktor, but that is not written yet...
-	_textArea->runRScript("TRUE", true);
-}
-
-QString BoundControlRestriktorTextArea::rScriptDoneHandler(const QString &result)
-{
-	if (!result.isEmpty())
-		return result;
-
-	Json::Value boundValue(Json::objectValue);
-
-	boundValue["syntaxOriginal"]	=	_textArea->text().toStdString();
-	boundValue["syntax"]			=	_textEncoded.toStdString();
-
-	setBoundValue(boundValue, !_control->form()->analysisObj()->wasUpgraded());
-	return QString();
 }
