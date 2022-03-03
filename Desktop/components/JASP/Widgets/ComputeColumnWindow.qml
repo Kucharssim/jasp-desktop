@@ -214,13 +214,17 @@ FocusScope
 					ListElement	{ type: "function";	functionName: "median";	functionParameters: "values";	functionParamTypes: "number";					toolTip: qsTr("median") }
 
 					ListElement	{ type: "separator" }
-					ListElement	{ type: "function";	functionName: "log";        functionParameters: "y";		functionParamTypes: "number";			toolTip: qsTr("natural logarithm") }
-					ListElement	{ type: "function";	functionName: "log2";       functionParameters: "y";		functionParamTypes: "number";			toolTip: qsTr("base 2 logarithm") }
-					ListElement	{ type: "function";	functionName: "log10";      functionParameters: "y";		functionParamTypes: "number";			toolTip: qsTr("base 10 logarithm") }
-					ListElement	{ type: "function";	functionName: "logb";       functionParameters: "y,base";	functionParamTypes: "number";			toolTip: qsTr("logarithm of y in 'base'") }
-					ListElement	{ type: "function";	functionName: "exp";        functionParameters: "y";		functionParamTypes: "number";			toolTip: qsTr("exponential") }
-					ListElement	{ type: "function";	functionName: "fishZ";      functionParameters: "y";		functionParamTypes: "number";			toolTip: qsTr("Fisher's Z-transform (i.e., the inverse hyperbolic tangent) to transform correlations, numbers between -1 and 1 to the real line") }
-					ListElement	{ type: "function";	functionName: "invFishZ";	functionParameters: "y";		functionParamTypes: "number";			toolTip: qsTr("Inverse Fisher's Z-transform (i.e., the hyperbolic tangent) to transform real numbers to numbers between -1 and 1") }
+					ListElement	{ type: "function";	functionName: "log";			functionParameters: "y";				functionParamTypes: "number";						toolTip: qsTr("natural logarithm") }
+					ListElement	{ type: "function";	functionName: "log2";			functionParameters: "y";				functionParamTypes: "number";						toolTip: qsTr("base 2 logarithm") }
+					ListElement	{ type: "function";	functionName: "log10";			functionParameters: "y";				functionParamTypes: "number";						toolTip: qsTr("base 10 logarithm") }
+					ListElement	{ type: "function";	functionName: "logb";			functionParameters: "y,base";			functionParamTypes: "number";						toolTip: qsTr("logarithm of y in 'base'") }
+					ListElement	{ type: "function";	functionName: "exp";			functionParameters: "y";				functionParamTypes: "number";						toolTip: qsTr("exponential") }
+					ListElement	{ type: "function";	functionName: "fishZ";			functionParameters: "y";				functionParamTypes: "number";						toolTip: qsTr("Fisher's Z-transform (i.e., the inverse hyperbolic tangent) to transform correlations, numbers between -1 and 1 to the real line") }
+					ListElement	{ type: "function";	functionName: "invFishZ";		functionParameters: "y";				functionParamTypes: "number";						toolTip: qsTr("Inverse Fisher's Z-transform (i.e., the hyperbolic tangent) to transform real numbers to numbers between -1 and 1") }
+					ListElement	{ type: "function";	functionName: "BoxCox";			functionParameters: "y,lambda,shift";	functionParamTypes: "number,number,number";			toolTip: qsTr("Two-parameter Box-Cox transform (transforms values greater than -shift) to stabilize variance and attempt to make the data more normal distribution-like.") }
+					ListElement	{ type: "function";	functionName: "invBoxCox";		functionParameters: "y,lambda,shift";	functionParamTypes: "number,number,number";			toolTip: qsTr("Inverse two-parameter Box-Cox transform.") }
+					ListElement	{ type: "function";	functionName: "powerTransform";	functionParameters: "y,lambda,shift";	functionParamTypes: "number,number,number";			toolTip: qsTr("Two-parameter power transform (transforms values greater than -shift) to stabilize variance and attempt to make the data more normal distribution-like.") }
+					ListElement	{ type: "function";	functionName: "YeoJohnson";		functionParameters: "y,lambda";			functionParamTypes: "number,number";				toolTip: qsTr("Yeo-Johnson transform (transforms any real values) to stabilize variance and attempt to make the data more normal distribution-like.") }
 
 					ListElement	{ type: "separator" }
 					ListElement	{ type: "function";	functionName: "cut";			functionParameters: "values,numBreaks";		functionParamTypes: "number,number";                                            toolTip: qsTr("break your data up in numBreaks levels") }
