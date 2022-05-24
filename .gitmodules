@@ -110,6 +110,10 @@
 	path = Modules/jaspBsts
 	url = https://github.com/jasp-stats/jaspBsts
 	branch = master
+[submodule "Modules/jaspLearnStats"]
+	path = Modules/jaspLearnStats
+	url = https://github.com/jasp-stats/jaspLearnStats.git
+	branch = master
 [submodule "Common/jaspColumnEncoder"]
 	path = Common/jaspColumnEncoder
 	url = https://github.com/jasp-stats/jaspColumnEncoder
