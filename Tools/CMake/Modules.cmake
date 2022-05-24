@@ -37,6 +37,7 @@ set(JASP_EXTRA_MODULES
     "jaspEquivalenceTTests"
     "jaspJags"
     "jaspLearnBayes"
+    "jaspLearnStats"
     "jaspMachineLearning"
     "jaspMetaAnalysis"
     "jaspNetwork"
